@@ -18,8 +18,8 @@ import os
 from flask_cors import CORS
 from webdriver_manager.chrome import ChromeDriverManager
 import logging
+import re
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 def svg_to_data_url(svg_data):
@@ -40,26 +40,32 @@ sheet = client.open('auto_curation').get_worksheet(0)  # 스프레드시트 이�
 def trigger_crawl():
     print("trigger 시작")
     data = request.get_json()
-    url = data.get('url')  # 스크립트에서 받은 URL 처리
+    urls = data.get('urls')
+    results = []
+    # 스크립트에서 받은 URL 처리
     # URL로 크롤링 로직을 동작시키는 함수 호출
-    try:
-        result = run_crawl(url)
-    except Exception as e:
-        print(f"Error during crawling: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
 
-    # 중복으로 jsonify하면 TypeError: Object of type Response is not JSON serializable
-    # return jsonify(result)
-    try:
-        if isinstance(result, dict) and result.get("status") == "error":
-            return jsonify(result), 500
-        if save_to_mongodb(result):
-            return jsonify({"status": "success", "message": "Data saved to MongoDB", "data": result})
-        else:
-            return jsonify({"status": "error", "message": "Failed to save data to MongoDB"}), 500
-    except Exception as e:
-        print(f"Error in MongoDB operation: {str(e)}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+    for url in urls :
+        try:
+            result = run_crawl(url)
+        except Exception as e:
+            print(f"Error during crawling: {str(e)}")
+            return jsonify({"status": "error", "message": str(e)}), 500
+
+        # 중복으로 jsonify하면 TypeError: Object of type Response is not JSON serializable
+        # return jsonify(result)
+        try:
+            if isinstance(result, dict) and result.get("status") == "error":
+                return jsonify(result), 500
+            if save_to_mongodb(result):
+                results.append({"url": url, "status": "success", "data": result})
+            else:
+                results.append({"url": url, "status": "error", "message": "Failed to save data to MongoDB"})
+        except Exception as e:
+            results.append({"url": url, "status": "error", "message": str(e)})
+
+    return jsonify(results)
+
 # mongodb 에 저장
 def save_to_mongodb(data):
     print("Attempting to save data to MongoDB")
@@ -191,6 +197,7 @@ def run_crawl(url):
 
                 WebDriverWait(driver, 10).until(EC.element_to_be_clickable(room))
                 room.click()
+                print("객실칸에 들어옴")
 
                 try:
                     lodgment_roomname = driver.find_element(By.CSS_SELECTOR, '.HBtVH').text
@@ -279,17 +286,14 @@ def run_crawl(url):
                     lodgment_cautions = []
 
                 try:
-                    expand_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, '._zphO')))
-                    expand_button.click()
-
                     lodgment_curation = []
                     imgs = []
-                    lodgment_images_elements = driver.find_elements(By.CSS_SELECTOR, '.yenNT img')
 
-                    coverImg = lodgment_images_elements[0].get_attribute('src')
+                    image_elements = driver.find_elements(By.CSS_SELECTOR, '.Mo74g')
 
-                    for element in lodgment_images_elements :
-                        src_image = element.get_attribute('src')
+                    for element in image_elements :
+                        style = element.find_element(By.CSS_SELECTOR, ".K0PDV").get_attribute('style')
+                        src_image = re.search(r'url\("([^"]+)"\)', style).group(1)
                         src_image_dict = {
                                           "src" : src_image,
                                           "description" : None
@@ -302,6 +306,8 @@ def run_crawl(url):
                                      "imgs" : imgs
                     }
                     lodgment_curation.append(curation_dict)
+
+                    coverImg = imgs[0]['src']
                     
                 except NoSuchElementException:
                     lodgment_curation = []
@@ -366,4 +372,4 @@ def run_crawl(url):
         driver.quit()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5005, debug=True)
+    app.run(host='0.0.0.0', port=5003, debug=True)
