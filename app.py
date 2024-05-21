@@ -311,6 +311,29 @@ def run_crawl(url):
                     
                 except NoSuchElementException:
                     lodgment_curation = []
+                    
+
+                try:
+                    lodgment_businessId = []
+                    lodgment_bizItemId = []
+
+                    # CSS 선택자를 사용하여 특정 요소 찾기
+                    link_element = driver.find_element(By.CSS_SELECTOR, "a.nP0xB")
+
+                    # href 속성 값 가져오기
+                    href_value = link_element.get_attribute('href')
+
+                    # 정규 표현식을 사용하여 필요한 부분 추출
+                    match = re.search(r'/bizes/(\d+)/items/(\d+)', href_value)
+                    if match:
+                        businessId = match.group(1)
+                        bizItemId = match.group(2)
+                        lodgment_businessId.append(businessId)
+                        lodgment_bizItemId.append(bizItemId)
+                except NoSuchElementException:
+                    lodgment_businessId = []
+                    lodgment_bizItemId = []
+
 
 
                 if len(list_rooms) > 1 :
@@ -327,7 +350,7 @@ def run_crawl(url):
                 collected_data.append({
                 'name': lodgment_fullname,
                 'fullAddress': lodgment_address,
-                'description' : lodgment_story + lodgment_introduce,
+                'description' : lodgment_story,
                 'defaultHeadcount' : lodgment_people_num,
                 'maximumHeadcount' : max_people_num,
                 'checkin' : check_in_time,
@@ -341,7 +364,9 @@ def run_crawl(url):
                 'priceDetails' : priceDetails,
                 'priceNotices' : priceNotices,
                 'additionalConvenience' : additional,
-                'refundRules' : refund
+                'refundRules' : refund,
+                'businessId' : lodgment_businessId,
+                'bizItemId' : lodgment_bizItemId
                 })
 
 
@@ -360,7 +385,7 @@ def run_crawl(url):
                     room_data['checkOut'],
                     str(room_data['facilities']),
                     str(room_data['cautions']),
-                    str(room_data['curation'])
+                    str(room_data['curation']),
                 ]
                 sheet.append_row(row)
         else :
