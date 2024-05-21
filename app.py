@@ -74,7 +74,7 @@ def save_to_mongodb(data):
             tlsCAFile=certifi.where(),
         )
         db = client["hwikDB"]
-        collection = db["testlodgment"]
+        collection = db["lodgments"]
         if isinstance(data, list):  # 데이터가 리스트인지 확인
             for doc in data:
                 doc["createdAt"] = datetime.now(timezone.utc)
