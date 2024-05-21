@@ -14,7 +14,6 @@ from pymongo import MongoClient
 import certifi
 from datetime import datetime, timezone
 import base64
-import os
 from flask_cors import CORS
 from webdriver_manager.chrome import ChromeDriverManager
 import logging
@@ -314,8 +313,6 @@ def run_crawl(url):
                     
 
                 try:
-                    lodgment_businessId = []
-                    lodgment_bizItemId = []
 
                     # CSS 선택자를 사용하여 특정 요소 찾기
                     link_element = driver.find_element(By.CSS_SELECTOR, "a.nP0xB")
@@ -326,13 +323,11 @@ def run_crawl(url):
                     # 정규 표현식을 사용하여 필요한 부분 추출
                     match = re.search(r'/bizes/(\d+)/items/(\d+)', href_value)
                     if match:
-                        businessId = match.group(1)
-                        bizItemId = match.group(2)
-                        lodgment_businessId.append(businessId)
-                        lodgment_bizItemId.append(bizItemId)
+                        lodgment_businessId = match.group(1)
+                        lodgment_bizItemId = match.group(2)
                 except NoSuchElementException:
-                    lodgment_businessId = []
-                    lodgment_bizItemId = []
+                    lodgment_businessId = None
+                    lodgment_bizItemId = None
 
 
 
