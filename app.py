@@ -33,7 +33,7 @@ scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/au
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
 creds = ServiceAccountCredentials.from_json_keyfile_name('hwik_key.json', scope)
 client = gspread.authorize(creds)
-sheet = client.open('auto_curation').get_worksheet(0)  # 스프레드시트 이름이 'auto_curation'인 시트를 열기
+sheet = client.open('auto_curation_result').get_worksheet(0)  # 스프레드시트 이름이 'auto_curation'인 시트를 열기
 
 @app.route('/trigger_crawl', methods=['POST'])
 def trigger_crawl():
